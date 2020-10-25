@@ -1,0 +1,615 @@
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+  <meta charset="utf-8">
+  <title> The Traveler</title>
+  <meta name="description" content="Small game built in HTML,CSS, and Javascript. Travel and make decisions that have consequences.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta property="og:title" content="">
+  <meta property="og:type" content="">
+  <meta property="og:url" content="">
+  <meta property="og:image" content="">
+
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="apple-touch-icon" href="icon.png">
+  <!-- Place favicon.ico in the root directory -->
+
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/main.css">
+
+  <meta name="theme-color" content="#fafafa">
+</head>
+
+<body>
+
+
+<h1 class="title"> The Traveler </h1>
+<div class="wrapper">
+
+
+<div id="start" class="player_form">
+  <label>
+    Player Name<br>  </label>
+    <input type="text" id="player_name" size="40"> <br> <br>
+
+  <label>
+    Player Specialization (Influences Skills)<br></label>
+    <select id="player_specialization">
+      <option value="Explorer"> Explorer </option>
+      <option value="Orator"> Orator </option>
+      <option value="Mechanic"> Mechanic </option>
+    </select><br> <br>
+  <div class="tables">
+    <table class="explorer_table">
+      <p class="explorer">Explorer </p>
+      <tr>
+        <th>Barter </th>
+        <th>Combat</th>
+        <th>Medicine</th>
+        <th>Speech</th>
+        <th>Tinkering</th>
+      </tr>
+      <tr>
+        <td> 3</td>
+        <td> 15</td>
+        <td> 16</td>
+        <td> 5</td>
+        <td> 8</td>
+      </tr>
+    </table>
+  <table class="orator_table">
+    <p class="orator">Orator </p>
+    <tr>
+      <th>Barter </th>
+      <th>Combat</th>
+      <th>Medicine</th>
+      <th>Speech</th>
+      <th>Tinkering</th>
+    </tr>
+    <tr>
+      <td> 16</td>
+      <td> 6</td>
+      <td> 5</td>
+      <td> 15</td>
+      <td> 4</td>
+    </tr>
+  </table>
+  <table class="mechanic_table">
+    <p class="mechanic">Mechanic </p>
+    <tr>
+      <th>Barter </th>
+      <th>Combat</th>
+      <th>Medicine</th>
+      <th>Speech</th>
+      <th>Tinkering</th>
+    </tr>
+    <tr>
+      <td> 3</td>
+      <td> 10</td>
+      <td> 9</td>
+      <td> 7</td>
+      <td> 16</td>
+    </tr>
+  </table>
+  </div>
+  <label>
+    Player Perk<br>  </label>
+    <select id="player_perk">
+      <option value="Silver-Tongued">Silver-Tongued: Increases Barter and speech skills </option>
+      <option value="Outdoors Enthusiast">Outdoors Enthusiast: Increases Combat skill and Medicine skills.</option>
+      <option value="Lucky Break">Lucky Break: Start with 150 more currency and a flashlight (required for cave exploration).</option>
+      <option value="Game Modder">Game Modder: Increases tinkering skill and start with 150 parts (parts are required to craft items).</option>
+    </select><br> <br>
+
+  <button class="startup" type="button" onclick="initialize();"> START </button> <br><br>
+</div>
+
+
+</div>
+
+<script src="js/vendor/modernizr-3.11.2.min.js"></script>
+<script src="js/plugins.js"></script>
+<script>
+  //Global Variables
+  class Item {
+    constructor(name, description, amount, cost) {
+      this.name = name;
+      this.description = description;
+      this.amount = amount;
+      this.cost = cost;
+    }
+
+  }
+  let skills = {
+    barter:0,
+    combat:0,
+    medicine:0,
+    speech:0,
+    tinkering:0
+  }
+
+  let health = 150;
+  let currency = 0;
+  let parts = 0;
+  let damage = 10.0 ;
+  let encounters = 0;
+  let purchases = 0;
+  let equipment = {
+    flashlight: new Item("FlashLight", "Allows access to caves.", 0, 85),
+    stoneAxe: new Item("Stone Axe", "Increases damage by 10. Lasts 2 combat encounters", 0, 350),
+    medicalChip: new Item("Medical Chip", "Heal (med skill contributes)", 0, 150)
+  }
+  class Player {
+
+    constructor(name, specialization, perks) {
+      this.name = name;
+      this.specialization = specialization;
+      this.perks = perks;
+    }
+
+    initializePlayer() {
+      if (document.getElementById('player_specialization').value == "Orator") {
+        skills = {
+          barter: 16,
+          combat: 6,
+          medicine: 5,
+          speech: 15,
+          tinkering: 4
+        }
+      } else if (document.getElementById('player_specialization').value == "Explorer") {
+        skills = {
+          barter: 3,
+          combat: 15,
+          medicine: 16,
+          speech: 5,
+          tinkering: 8
+        }
+      } else {
+        skills = {
+          barter: 3,
+          combat: 10,
+          medicine: 9,
+          speech: 7,
+          tinkering: 16
+        }
+      }
+        switch (this.perks) {
+          case "Silver-Tongued":
+            skills.barter += 7;
+            skills.speech += 7;
+            break;
+          case "Outdoors Enthusiast":
+            skills.combat += 7;
+            skills.medicine += 7;
+            break;
+          case "Lucky Break":
+            currency += 150;
+            equipment.flashlight.amount += 1;
+            break;
+          case "Game Modder":
+            skills.tinkering += 7;
+            parts += 150;
+            break;
+
+          default:
+            break;
+        }
+        damage += (skills.combat * 0.75);
+      }
+  }
+  let player;
+
+  // Body ("main method")
+
+  function main(){
+    let gameHTML = "<h2>" + player.name + "</h2>";
+    gameHTML += "<h3> Player Skills </h3>";
+    gameHTML += "<table class=\"player_stats\">\n" +
+      '    <tr>\n' +
+      '        <th>Barter </th>\n' +
+      '        <th>Combat </th>\n' +
+      '        <th>Medicine </th>\n' +
+      '        <th>Speech</th>\n' +
+      '        <th>Tinkering </th>\n' +
+      '    </tr>';
+    gameHTML += '<tr>\n' +
+      '        <td>\n' + skills.barter + '\n' + '</td>\n' +
+      '        <td>\n' + skills.combat +  '\n' + '</td>\n' +
+      '        <td>\n' + skills.medicine + '\n' + '</td>\n' +
+      '        <td>\n' + skills.speech + '\n' + '</td>\n' +
+      '        <td>\n' + skills.tinkering + '\n' + '</td>\n' +
+      '    </tr>\n';
+    gameHTML += '</table><br/>';
+    gameHTML += "<h3> Player Stats </h3>";
+    gameHTML += "<table class=\"player_stats\">\n" +
+      '    <tr>\n' +
+      '        <th>Health </th>\n' +
+      '        <th>Currency </th>\n' +
+      '        <th>Parts </th>\n' +
+      '        <th>Current Damage</th>\n' +
+      '        <th>Specialization w/ Perk </th>\n' +
+      '    </tr>';
+    gameHTML += '<tr>\n' +
+      '        <td id="health">\n' + health.toFixed(0) + '\n' + '</td>\n' +
+      '        <td id="currency">\n' + currency +  '\n' + '</td>\n' +
+      '        <td id="parts">\n' + parts + '\n' + '</td>\n' +
+      '        <td id="damage">\n' + damage + '\n' + '</td>\n' +
+      '        <td>\n' + player.specialization + " with " + player.perks + '\n' + '</td>\n' +
+      '    </tr>\n';
+    gameHTML += '</table><br/>';
+
+    gameHTML += "<h3> Player Equipment </h3>";
+    gameHTML += "<table class=\"item_stats\">\n" +
+      '    <tr>\n' +
+      '        <th>Flashlight </th>\n' +
+      '        <th>Stone Axe </th>\n' +
+      '        <th>Medical Chip </th>\n' +
+      '    </tr>';
+    gameHTML += '<tr>\n' +
+      '        <td>\n Description: ' + equipment.flashlight.description + '\n' + '</td>\n' +
+      '        <td>\n Description: ' + equipment.stoneAxe.description +  '\n' + '</td>\n' +
+      '        <td>\n Description: ' + equipment.medicalChip.description + '\n' + '</td>\n' +
+      '    </tr>\n';
+    gameHTML += '<tr>\n' +
+      '        <td id="flash_count">\n Owned: ' + equipment.flashlight.amount + '\n' + '</td>\n' +
+      '        <td id="stone_count">\n Owned: ' + equipment.stoneAxe.amount +  '\n' + '</td>\n' +
+      '        <td id="chip_count">\n Owned: ' + equipment.medicalChip.amount + '\n' + '</td>\n' +
+      '    </tr>\n';
+    gameHTML += '<tr>\n' +
+      '        <td>\n Cost: ' + equipment.flashlight.cost + '\n' + '</td>\n' +
+      '        <td>\n Cost: ' + equipment.stoneAxe.cost +  '\n' + '</td>\n' +
+      '        <td>\n Cost: ' + equipment.medicalChip.cost + '\n' + '</td>\n' +
+      '    </tr>\n';
+    gameHTML += '<tr>\n' +
+      '        <td>\n' + '<button onclick="craftFlashlight()"> Craft </button>' + '\n' + '</td>\n' +
+      '        <td>\n' + '<button onclick="craftStoneAxe()"> Craft </button>' + '\n' + '</td>\n' +
+      '        <td>\n' + '<button onclick="craftMedicalChip()"> Craft </button>' + '<button onclick="useMedicalChip()"> Use </button>'+ '\n' + '</td>\n' +
+      '    </tr>\n';
+    gameHTML += '</table><br/>';
+
+
+      gameHTML += "<h1 id=\"progress\" class=\"advance_game\"> Advance your path: </h1>" +
+        "<button id=\"advance\" class=\"advance_game_button\" onclick=\"advance_game()\"> Advance </button>"
+
+    document.getElementById("start").innerHTML = gameHTML;
+
+
+  }
+  // Game scenarios
+  class Scenario{
+    constructor(name,description){
+      this.name = name;
+      this.description = description;
+    }
+  }
+  let scenarios = {
+    combatScenario: new Scenario("Combat Engaged", "While traveling the roads you have encountered a threat"),
+    scavengingScenario: new Scenario("Supplies Found", "You have found supplies! +25 to either currency or parts."),
+    clearScenario: new Scenario("Road is all clear", "You keep moving."),
+
+    caveScenario: new Scenario("Cave Ahead", "Caves may contain supplies or enemies. If you have a flashlight you may enter."),
+
+    combatAndSpeechCheck: new Scenario("You have met a fellow traveler.",
+        "You see that he has value-able items in his possession. Intimidate him for the supplies? (Combat & Speech skill)"),
+
+    tinkeringCheck: new Scenario("You come across a security locked door", "Apply your tinkering knowledge to gain access?"),
+    tinkeringCheck2: new Scenario("After entering an abandoned computer shop you notice a lot of broken down parts",
+        "Combining your tinkering knowledge your were able to scavenge some parts."),
+
+    medicineCheck: new Scenario("You have contracted an illness", "Take damage reduced from your medicine skill."),
+
+    market: new Scenario("Market Ahead", "Do you wish to trade?")
+  }
+  // Methods
+  function advance_game(){
+    let randomEvent = Math.floor(Math.random() * 10)
+    let eventHTML;
+    if (equipment.stoneAxe.amount > 0){
+      if (encounters % 2 == 0){
+        equipment.stoneAxe.amount -= 1;
+        damage -= 10;
+        document.getElementById('damage').innerText = damage;
+        document.getElementById('stone_count').innerText = "Owned: " + equipment.stoneAxe.amount;
+      }
+    }
+    switch(randomEvent) {
+      case 0:
+        eventHTML = '<h3>' + scenarios.clearScenario.name + '</h3>' +
+                    '<h4>' + scenarios.clearScenario.description  + '</h4>';
+        document.getElementById("progress").innerHTML = eventHTML;
+        break;
+      case 1:
+        let randomness = (randomEvent % 0 == 0);
+        eventHTML = '<h3>' + scenarios.scavengingScenario.name + '</h3>' +
+          '<h4>' + scenarios.scavengingScenario.description  + '</h4>';
+        if (randomness){
+          eventHTML += '<h4> You found 25 currency </h4>';
+          currency += 25;
+          document.getElementById('currency').innerText = currency;
+        } else{
+          parts += 25;
+          document.getElementById('parts').innerText = parts;
+          eventHTML += '<h4> You found 25 parts </h4>';
+        }
+        document.getElementById("progress").innerHTML = eventHTML;
+        break;
+      case 2:
+        eventHTML = '<h3>' + scenarios.caveScenario.name + '</h3>' +
+          '<h4>' + scenarios.caveScenario.description  + '</h4>';
+        if (equipment.flashlight.amount > 0){
+          eventHTML += '<button onclick="cave()"> Enter </button>';
+        } else{
+          eventHTML += "<h4> You lack the equipment to enter. Flashlight required.</h4>"
+        }
+        document.getElementById("progress").innerHTML = eventHTML;
+        break;
+      case 3:
+        eventHTML = '<h3>' + scenarios.medicineCheck.name + '</h3>' +
+          '<h4>' + scenarios.medicineCheck.description  + '</h4>';
+        health = Math.max(0, (health-(25-skills.medicine)));
+        document.getElementById('health').innerText = health.toFixed(0);
+        if (health == 0){
+          document.getElementById("advance").style.display = "none";
+          eventHTML = "<h1> Game Over! Reduced to 0 HP.</h1>"
+        }
+        document.getElementById("progress").innerHTML = eventHTML;
+        break;
+      case 4:
+        eventHTML = '<h3>' + scenarios.market.name + '</h3>' +
+          '<h4>' + scenarios.market.description  + '</h4>';
+        eventHTML += '<button onclick="enter_market()"> Go to Market </button>';
+        document.getElementById("progress").innerHTML = eventHTML;
+        break;
+      case 5:
+        encounters++;
+        eventHTML = '<h3>' + scenarios.combatScenario.name + '</h3>' +
+          '<h4>' + scenarios.combatScenario.description  + '</h4>';
+        health = Math.max(0, (health-(45-skills.medicine)));
+        document.getElementById('health').innerText = health.toFixed(0);
+        if (health == 0){
+          document.getElementById("advance").style.display = "none";
+          eventHTML = "<h1> Game Over! Reduced to 0 HP.</h1>"
+        }
+        document.getElementById("progress").innerHTML = eventHTML;
+        break;
+      case 6:
+        eventHTML = '<h3>' + scenarios.tinkeringCheck.name + '</h3>' +
+          '<h4>' + scenarios.tinkeringCheck.description  + '</h4>';
+        eventHTML += '<button onclick="open_door()"> Open Security Door </button>';
+        document.getElementById("progress").innerHTML = eventHTML;
+        break;
+      case 7:
+        eventHTML = '<h3>' + scenarios.combatAndSpeechCheck.name + '</h3>' +
+          '<h4>' + scenarios.combatAndSpeechCheck.description  + '</h4>';
+        eventHTML += '<button onclick="rob()"> Intimidate for Supplies </button>';
+        document.getElementById("progress").innerHTML = eventHTML;
+        break;
+      case 8:
+        eventHTML = '<h3>' + scenarios.tinkeringCheck2.name + '</h3>' +
+          '<h4>' + scenarios.tinkeringCheck2.description  + '</h4>';
+          parts += 15 + (skills.tinkering * 2.5);
+          document.getElementById('parts').innerText = parts;
+          document.getElementById("progress").innerHTML = eventHTML;
+          break;
+      case 9:
+        eventHTML = '<h3>' + scenarios.market.name + '</h3>' +
+          '<h4>' + scenarios.market.description  + '</h4>';
+        eventHTML += '<button onclick="enter_market()"> Go to Market </button>';
+        document.getElementById("progress").innerHTML = eventHTML;
+        break;
+      default:
+        break;
+    }
+  }
+
+  function rob(){
+    let robHTML;
+    let random = Math.floor(Math.random() * (40+(skills.combat+skills.speech)));
+    if (random <= 25){
+      encounters++;
+      robHTML = "<h3> Unsuccessful attempt </h3>" +
+        ' <h4> You lose 35 parts and currency, and some health! </h4>';
+      currency = Math.max(0, (currency-35));
+      parts = Math.max(0,(currency-35));
+      health = Math.max(0, (health-(35-damage)));
+      document.getElementById('health').innerText = health.toFixed(0);
+      document.getElementById('currency').innerText = currency;
+      document.getElementById('parts').innerText = parts;
+      if (health == 0){
+        document.getElementById("advance").style.display = "none";
+        robHTML = "<h1> Game Over! Reduced to 0 HP.</h1>"
+      }
+      document.getElementById("progress").innerHTML = robHTML;
+    }else{
+      robHTML = "<h3> Successful attempt </h3>" +
+        ' <h4> You gain 50 parts and currency </h4>';
+      currency += 50;
+      parts += 50;
+      document.getElementById('currency').innerText = currency;
+      document.getElementById('parts').innerText = parts;
+      document.getElementById("progress").innerHTML = robHTML;
+    }
+
+  }
+
+  function open_door(){
+    let doorHTML;
+    let random = Math.floor(Math.random() * (50+skills.tinkering));
+    if (random <= 25){
+      encounters++;
+      doorHTML = "<h3> You encountered an enemy! </h3>" +
+        ' <h4> Take damage reduced from your attack! These are the strongest type of enemy</h4>' ;
+      health = Math.max(0, (health-(75-damage)));
+      document.getElementById('health').innerText = health.toFixed(0);
+      if (health == 0){
+        document.getElementById("advance").style.display = "none";
+        doorHTML = "<h1> Game Over! Reduced to 0 HP.</h1>"
+      }
+      document.getElementById("progress").innerHTML = doorHTML;
+
+    }else{
+      doorHTML = "<h3> You found supplies! </h3>" +
+        ' <h4> You receive 75 parts and currency! </h4>';
+      currency += 75;
+      parts += 75;
+      document.getElementById('currency').innerText = currency;
+      document.getElementById('parts').innerText = parts;
+
+      document.getElementById("progress").innerHTML = doorHTML;
+    }
+  }
+
+  function cave(){
+    equipment.flashlight.amount -= 1;
+    document.getElementById('flash_count').innerText = "Owned: " + equipment.flashlight.amount;
+    let random = Math.floor(Math.random() * 3);
+    let caveHTML;
+    if (random > 0){
+      caveHTML = "<h3> You found supplies! </h3>" +
+      ' <h4> You receive 65 parts and currency! </h4>';
+      currency += 65;
+      parts += 65;
+      document.getElementById('currency').innerText = currency;
+      document.getElementById('parts').innerText = parts;
+
+      document.getElementById("progress").innerHTML = caveHTML;
+    }else{
+      encounters++;
+      caveHTML = "<h3> You encountered an enemy! </h3>" +
+        ' <h4> Take damage reduced from your attack! Cave enemies are stronger than normal encounters</h4>' ;
+        health = Math.max(0, (health-(65-damage)));
+        document.getElementById('health').innerText = health.toFixed(0);
+        if (health == 0){
+          document.getElementById("advance").style.display = "none";
+          caveHTML = "<h1> Game Over! Reduced to 0 HP.</h1>"
+        }
+        document.getElementById("progress").innerHTML = caveHTML;
+    }
+  }
+
+  function enter_market(){
+    purchases = 0;
+    let marketHTML;
+    marketHTML = '</table><br/>';
+    marketHTML += "<h2> Trade Center </h2>"
+    marketHTML += "<h4> Use currency here. Buy/Sell prices are same as crafting cost (barter influences prices).</h4>";
+    marketHTML += "<h3> 2 PURCHASE LIMIT PER VISIT</h3>";
+    marketHTML += "<table class=\"item_stats\">\n" +
+      '    <tr>\n' +
+      '        <th>Flashlight </th>\n' +
+      '        <th>Stone Axe </th>\n' +
+      '        <th>Medical Chip </th>\n' +
+      '    </tr>';
+    marketHTML += '<tr>\n' +
+      '        <td>\n' + '<button onclick="buyFlashlight()"> Buy </button>' + '<button onclick="sellFlashlight()"> Sell </button>'+ '\n' + '</td>\n' +
+      '        <td>\n' + '<button onclick="buyStoneAxe()"> Buy </button>' + '<button onclick="sellStoneAxe()"> Sell </button>'+ '\n' + '</td>\n' +
+      '        <td>\n' + '<button onclick="buyMedicalChip()"> Buy </button>' + '<button onclick="sellMedicalChip()"> Sell </button>'+ '\n' + '</td>\n' +
+      '    </tr>\n\n';
+    document.getElementById("progress").innerHTML = marketHTML;
+  }
+  function buyFlashlight(){
+    if (currency >= equipment.flashlight.cost && purchases < 2){
+      purchases++;
+      currency -= (equipment.flashlight.cost - skills.barter);
+      equipment.flashlight.amount += 1;
+      document.getElementById('currency').innerText = currency;
+      document.getElementById('flash_count').innerText = "Owned: " + equipment.flashlight.amount;
+    }
+  }
+  function buyStoneAxe(){
+    if (currency >= equipment.stoneAxe.cost && purchases < 2){
+      purchases++;
+      currency -= (equipment.stoneAxe.cost - skills.barter);
+      equipment.stoneAxe.amount += 1;
+      damage += 10;
+      document.getElementById('damage').innerText = damage;
+      document.getElementById('currency').innerText = currency;
+      document.getElementById('stone_count').innerText = "Owned: " + equipment.stoneAxe.amount;
+    }
+  }
+  function buyMedicalChip(){
+    if (currency >= equipment.medicalChip.cost && purchases < 2){
+      purchases++;
+      currency -= (equipment.medicalChip.cost - skills.barter);
+      equipment.medicalChip.amount += 1;
+      document.getElementById('currency').innerText = currency;
+      document.getElementById('chip_count').innerText = "Owned: " + equipment.medicalChip.amount;
+    }
+  }
+  function sellFlashlight(){
+    if (equipment.flashlight.amount > 0){
+      currency += (equipment.flashlight.cost + skills.barter);
+      equipment.flashlight.amount -= 1;
+      document.getElementById('currency').innerText = currency;
+      document.getElementById('flash_count').innerText = "Owned: " + equipment.flashlight.amount;
+    }
+  }
+  function sellStoneAxe(){
+    if (equipment.stoneAxe.amount > 0){
+      currency += (equipment.stoneAxe.cost + skills.barter);
+      equipment.stoneAxe.amount -= 1;
+      damage -= 10;
+      document.getElementById('damage').innerText = damage;
+      document.getElementById('currency').innerText = currency;
+      document.getElementById('stone_count').innerText = "Owned: " + equipment.stoneAxe.amount;
+    }
+  }
+  function sellMedicalChip(){
+    if (equipment.medicalChip.amount > 0){
+      currency += (equipment.medicalChip.cost + skills.barter);
+      equipment.medicalChip.amount -= 1;
+      document.getElementById('currency').innerText = currency;
+      document.getElementById('chip_count').innerText = "Owned: " + equipment.medicalChip.amount;
+    }
+  }
+  function initialize(){
+    let name = document.getElementById("player_name").value;
+    if (name == ""){
+      name = "Jane/John Doe";
+    }
+    const specialization = document.getElementById("player_specialization").value;
+    const perk = document.getElementById("player_perk").value;
+    player = new Player(name, specialization, perk);
+    player.initializePlayer();
+    main();
+  }
+  function craftFlashlight(){
+    if (parts >= equipment.flashlight.cost){
+      equipment.flashlight.amount += 1;
+      parts -= equipment.flashlight.cost;
+      document.getElementById('parts').innerText = parts;
+      document.getElementById('flash_count').innerText = "Owned: " + equipment.flashlight.amount;
+    }
+  }
+  function craftStoneAxe(){
+    if (parts >= equipment.stoneAxe.cost){
+      equipment.stoneAxe.amount += 1;
+      parts -= equipment.stoneAxe.cost;
+      damage += 10;
+      document.getElementById('damage').innerText = damage;
+      document.getElementById('parts').innerText = parts;
+      document.getElementById('stone_count').innerText = "Owned: " + equipment.stoneAxe.amount;
+    }
+  }
+  function craftMedicalChip(){
+    if (parts >= equipment.medicalChip.cost){
+      equipment.medicalChip.amount += 1;
+      parts -= equipment.medicalChip.cost;
+      document.getElementById('parts').innerText = parts;
+      document.getElementById('chip_count').innerText = "Owned: " + equipment.medicalChip.amount;
+    }
+  }
+  function useMedicalChip() {
+    if (equipment.medicalChip.amount > 0){
+      health += Math.min((skills.medicine*0.9+15),150);
+      equipment.medicalChip.amount -= 1;
+      document.getElementById('health').innerText = health.toFixed(0);
+      document.getElementById('chip_count').innerText = "Owned: " + equipment.medicalChip.amount;
+    }
+  }
+</script>
+</body>
+
+</html>
